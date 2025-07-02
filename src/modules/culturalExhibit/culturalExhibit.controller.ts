@@ -1,4 +1,11 @@
 import { Request, Response } from "express";
+import { CustomError } from "../../middlewares/errorHandler";
+import {
+  sendCreated,
+  sendError,
+  sendNoContent,
+  sendSuccess,
+} from "../../utils/responseHandler";
 import * as culturalExhibitService from "./culturalExhibit.service";
 
 export const createCulturalExhibit = async (req: Request, res: Response) => {
@@ -6,18 +13,18 @@ export const createCulturalExhibit = async (req: Request, res: Response) => {
     const exhibit = await culturalExhibitService.createCulturalExhibit(
       req.body,
     );
-    res.status(201).json(exhibit);
+    sendCreated(res, exhibit, "Cultural exhibit created successfully");
   } catch (error) {
-    res.status(400).json({ error: (error as Error).message });
+    sendError(res, "Failed to create cultural exhibit", 400, error);
   }
 };
 
 export const getCulturalExhibits = async (_req: Request, res: Response) => {
   try {
     const exhibits = await culturalExhibitService.getCulturalExhibits();
-    res.json(exhibits);
+    sendSuccess(res, exhibits, "Cultural exhibits retrieved successfully");
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+    sendError(res, "Failed to retrieve cultural exhibits", 500, error);
   }
 };
 
@@ -27,11 +34,15 @@ export const getCulturalExhibitById = async (req: Request, res: Response) => {
       req.params.id,
     );
     if (!exhibit) {
-      res.status(404).json({ error: "Not found" });
+      throw new CustomError("Cultural exhibit not found", 404);
     }
-    res.json(exhibit);
+    sendSuccess(res, exhibit, "Cultural exhibit retrieved successfully");
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+    if (error instanceof CustomError) {
+      sendError(res, error.message, error.statusCode, error);
+    } else {
+      sendError(res, "Failed to retrieve cultural exhibit", 500, error);
+    }
   }
 };
 
@@ -41,17 +52,17 @@ export const updateCulturalExhibit = async (req: Request, res: Response) => {
       req.params.id,
       req.body,
     );
-    res.json(exhibit);
+    sendSuccess(res, exhibit, "Cultural exhibit updated successfully");
   } catch (error) {
-    res.status(400).json({ error: (error as Error).message });
+    sendError(res, "Failed to update cultural exhibit", 400, error);
   }
 };
 
 export const deleteCulturalExhibit = async (req: Request, res: Response) => {
   try {
     await culturalExhibitService.deleteCulturalExhibit(req.params.id);
-    res.status(204).send();
+    sendNoContent(res, "Cultural exhibit deleted successfully");
   } catch (error) {
-    res.status(500).json({ error: (error as Error).message });
+    sendError(res, "Failed to delete cultural exhibit", 500, error);
   }
 };
