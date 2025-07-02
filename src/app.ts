@@ -9,6 +9,9 @@ import {
   securityHeaders,
 } from "./middlewares/security";
 import culturalExhibitRoutes from "./modules/culturalExhibit/culturalExhibit.routes";
+import culturalPieceRoutes from "./modules/culturalPiece/culturalPiece.routes";
+import exhibitSpaceRoutes from "./modules/exhibitSpace/exhibitSpace.routes";
+import levelRoutes from "./modules/level/level.routes";
 
 const app = express();
 
@@ -36,6 +39,9 @@ app.use((req, res, next) => {
 
 // API Routes
 app.use("/api/cultural-exhibits", culturalExhibitRoutes);
+app.use("/api/levels", levelRoutes);
+app.use("/api/exhibit-spaces", exhibitSpaceRoutes);
+app.use("/api/cultural-pieces", culturalPieceRoutes);
 
 // Health check endpoint
 app.get("/health", (_req, res) => {

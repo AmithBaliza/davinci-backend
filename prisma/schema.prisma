@@ -9,6 +9,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum CulturalPieceType {
+  MONUMENT
+  PAINTING
+  SCULPTURE
+}
+
 model CulturalExhibit {
   id               String   @id @default(uuid())
   name             Json
@@ -25,6 +31,83 @@ model CulturalExhibit {
   openingTime      DateTime
   priority         Int
   textOnly         Boolean
+  skipMap          Boolean
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  // Relations
+  levels           Level[]
+  exhibitSpaces    ExhibitSpace[]
+  culturalPieces   CulturalPiece[]
+}
+
+model Level {
+  id                 String          @id @default(uuid())
+  culturalExhibitId  String
+  name               Json
+  description        Json
+  mainImage          String
+  mapImage           String
+  order              Int
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  // Relations
+  culturalExhibit    CulturalExhibit @relation(fields: [culturalExhibitId], references: [id], onDelete: Cascade)
+  exhibitSpaces      ExhibitSpace[]
+  culturalPieces     CulturalPiece[]
+
+  @@index([culturalExhibitId])
+  @@index([order])
+}
+
+model ExhibitSpace {
+  id                 String          @id @default(uuid())
+  name               String
+  description        String
+  culturalExhibitId  String
+  levelId            String
+  image              String
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  // Relations
+  culturalExhibit    CulturalExhibit @relation(fields: [culturalExhibitId], references: [id], onDelete: Cascade)
+  level              Level           @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  culturalPieces     CulturalPiece[]
+
+  @@index([culturalExhibitId])
+  @@index([levelId])
+}
+
+model CulturalPiece {
+  id                      String              @id @default(uuid())
+  name                    Json
+  shortDescription        Json
+  aiDescription           Json
+  initialGreetingText     Json
+  greetingAudioAvailable  Boolean
+  isActive                Boolean
+  type                    CulturalPieceType
+  coordinates             Json?
+  images                  String[]
+  marker                  Json?
+  video                   String?
+  culturalExhibitId       String
+  levelId                 String
+  exhibitSpaceId          String
+  initialGreetingAudios   Json
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  // Relations
+  culturalExhibit         CulturalExhibit     @relation(fields: [culturalExhibitId], references: [id], onDelete: Cascade)
+  level                   Level               @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  exhibitSpace            ExhibitSpace        @relation(fields: [exhibitSpaceId], references: [id], onDelete: Cascade)
+
+  @@index([culturalExhibitId])
+  @@index([levelId])
+  @@index([exhibitSpaceId])
+  @@index([type])
+  @@index([isActive])
 }
