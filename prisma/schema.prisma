@@ -15,6 +15,13 @@ enum CulturalPieceType {
   SCULPTURE
 }
 
+enum TicketType {
+  POPULAR
+  MUSEUM
+  MONUMENT
+  CITY
+}
+
 model CulturalExhibit {
   id               String   @id @default(uuid())
   name             Json
@@ -39,6 +46,8 @@ model CulturalExhibit {
   levels           Level[]
   exhibitSpaces    ExhibitSpace[]
   culturalPieces   CulturalPiece[]
+  exhibitItineraries ExhibitItinerary[]
+  tickets          Ticket[]
 }
 
 model Level {
@@ -110,4 +119,63 @@ model CulturalPiece {
   @@index([exhibitSpaceId])
   @@index([type])
   @@index([isActive])
+}
+
+model ExhibitItinerary {
+  id                      String              @id @default(uuid())
+  name                    Json
+  description             Json
+  minDuration             Int
+  maxDuration             Int
+  isActive                Boolean
+  isCustom                Boolean
+  isPreferred             Boolean
+  likes                   Int                 @default(0)
+  images                  String[]
+  rank                    Int
+  culturalPiecesRanking   Json
+  culturalExhibitId       String
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  // Relations
+  culturalExhibit         CulturalExhibit     @relation(fields: [culturalExhibitId], references: [id], onDelete: Cascade)
+  tickets                 Ticket[]            @relation("TicketItineraries")
+
+  @@index([culturalExhibitId])
+  @@index([isActive])
+  @@index([isCustom])
+  @@index([isPreferred])
+  @@index([rank])
+}
+
+model Ticket {
+  id                      String              @id @default(uuid())
+  name                    Json
+  description             Json
+  city                    String
+  comingSoon              Boolean
+  isRecommended           Boolean
+  images                  String[]
+  maxTime                 Int
+  price                   Float
+  priority                Int
+  onOffer                 Boolean
+  offerPrice              Float?
+  recommendedVisitTime    String
+  type                    TicketType
+  culturalExhibitId       String
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  // Relations
+  culturalExhibit         CulturalExhibit     @relation(fields: [culturalExhibitId], references: [id], onDelete: Cascade)
+  exhibitItineraries      ExhibitItinerary[]  @relation("TicketItineraries")
+
+  @@index([culturalExhibitId])
+  @@index([type])
+  @@index([isRecommended])
+  @@index([comingSoon])
+  @@index([onOffer])
+  @@index([priority])
 }
