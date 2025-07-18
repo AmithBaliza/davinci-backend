@@ -6,7 +6,6 @@ import logger from "./logger";
 // Initialize Firebase Admin SDK
 const initializeFirebase = () => {
   try {
-    // Check if Firebase app is already initialized
     if (getApps().length === 0) {
       const serviceAccount = {
         projectId: env.FIREBASE_PROJECT_ID,
@@ -27,10 +26,8 @@ const initializeFirebase = () => {
   }
 };
 
-// Initialize Firebase
 initializeFirebase();
 
-// Export Firebase Auth instance
 export const firebaseAuth = getAuth();
 
 export default firebaseAuth;

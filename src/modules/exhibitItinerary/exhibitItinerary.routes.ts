@@ -12,7 +12,11 @@ import {
   updateExhibitItinerarySchema,
 } from "./exhibitItinerary.validation";
 
+import { authenticateToken } from "../../middlewares/auth";
+
 const router = Router();
+
+router.use(authenticateToken);
 
 router.post(
   "/",

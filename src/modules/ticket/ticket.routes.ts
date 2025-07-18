@@ -12,7 +12,11 @@ import {
   updateTicketSchema,
 } from "./ticket.validation";
 
+import { authenticateToken } from "../../middlewares/auth";
+
 const router = Router();
+
+router.use(authenticateToken);
 
 router.post("/", validateBody(createTicketSchema), controller.createTicket);
 router.get("/", validateQuery(ticketQuerySchema), controller.getTickets);

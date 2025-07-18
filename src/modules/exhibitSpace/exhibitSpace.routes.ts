@@ -12,7 +12,11 @@ import {
   updateExhibitSpaceSchema,
 } from "./exhibitSpace.validation";
 
+import { authenticateToken } from "../../middlewares/auth";
+
 const router = Router();
+
+router.use(authenticateToken);
 
 router.post(
   "/",

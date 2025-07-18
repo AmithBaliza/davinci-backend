@@ -12,7 +12,11 @@ import {
   updateLevelSchema,
 } from "./level.validation";
 
+import { authenticateToken } from "../../middlewares/auth";
+
 const router = Router();
+
+router.use(authenticateToken);
 
 router.post("/", validateBody(createLevelSchema), controller.createLevel);
 router.get("/", validateQuery(levelQuerySchema), controller.getLevels);

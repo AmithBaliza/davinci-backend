@@ -12,7 +12,11 @@ import {
   updateCulturalPieceSchema,
 } from "./culturalPiece.validation";
 
+import { authenticateToken } from "../../middlewares/auth";
+
 const router = Router();
+
+router.use(authenticateToken);
 
 router.post(
   "/",
