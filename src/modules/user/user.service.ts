@@ -110,6 +110,7 @@ export const syncUserFromFirebase = async (firebaseUid: string) => {
     } else {
       // Create new user from Firebase data
       user = await createUser({
+        id: firebaseUid,
         firebaseUid,
         email: firebaseUser.email,
         name: firebaseUser.displayName,

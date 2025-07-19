@@ -44,7 +44,7 @@ enum Role {
 }
 
 model User {
-  id                      String   @id @default(uuid())
+  id                      String   @id
   firebaseUid             String   @unique
   ambientMusic            Boolean  @default(true)
   communicationEnabled    Boolean  @default(true)
@@ -61,6 +61,12 @@ model User {
   notificationCount       Int      @default(0)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
+
+  // Reverse relations
+  activatedTickets        ActivatedTicket[]
+  adminTours              Tour[]   @relation("AdminUserTours")
+  memberTours             Tour[]   @relation("TourMembers")
+  messages                Message[]
 
   @@index([firebaseUid])
   @@index([email])
@@ -94,6 +100,10 @@ model CulturalExhibit {
   culturalPieces   CulturalPiece[]
   exhibitItineraries ExhibitItinerary[]
   tickets          Ticket[]
+  // Reverse relations
+  activatedTickets ActivatedTicket[]
+  tours            Tour[]
+
 }
 
 model Level {
@@ -159,6 +169,7 @@ model CulturalPiece {
   culturalExhibit         CulturalExhibit     @relation(fields: [culturalExhibitId], references: [id], onDelete: Cascade)
   level                   Level               @relation(fields: [levelId], references: [id], onDelete: Cascade)
   exhibitSpace            ExhibitSpace        @relation(fields: [exhibitSpaceId], references: [id], onDelete: Cascade)
+  messages                Message[]
 
   @@index([culturalExhibitId])
   @@index([levelId])
@@ -187,12 +198,87 @@ model ExhibitItinerary {
   // Relations
   culturalExhibit         CulturalExhibit     @relation(fields: [culturalExhibitId], references: [id], onDelete: Cascade)
   tickets                 Ticket[]            @relation("TicketItineraries")
+  tours                   Tour[]
 
   @@index([culturalExhibitId])
   @@index([isActive])
   @@index([isCustom])
   @@index([isPreferred])
   @@index([rank])
+}
+
+model ActivatedTicket {
+  id                 String   @id @default(uuid())
+  isActivated        Boolean  @default(false)
+  isExpired          Boolean  @default(false)
+  isFree             Boolean
+  isPhysical         Boolean
+  images             String[]
+  maxTime            Int
+  name               String
+  price              Float
+  culturalExhibitId  String
+  ticketId           String
+  userId             String? // Nullable until activated
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  expirationTime     DateTime?
+
+  // Relations
+  culturalExhibit    CulturalExhibit @relation(fields: [culturalExhibitId], references: [id])
+  ticket             Ticket          @relation(fields: [ticketId], references: [id])
+  user               User?           @relation(fields: [userId], references: [id])
+  tours              Tour[]
+
+  @@index([ticketId])
+  @@index([culturalExhibitId])
+  @@index([userId])
+}
+
+model Message {
+  id               String   @id @default(uuid())
+  fromBot          Boolean
+  isInitial        Boolean
+  createdAt        DateTime @default(now())
+  text             String
+  culturalPieceId  String
+  userId           String?
+  tourId           String
+
+  // Relations
+  culturalPiece    CulturalPiece @relation(fields: [culturalPieceId], references: [id])
+  user             User?         @relation(fields: [userId], references: [id])
+  tour             Tour          @relation(fields: [tourId], references: [id])
+
+  @@index([culturalPieceId])
+  @@index([userId])
+  @@index([tourId])
+}
+
+model Tour {
+  id                 String   @id @default(uuid())
+  isStarted          Boolean  @default(false)
+  userInteracted     Boolean  @default(false)
+  adminUserId        String
+  activatedTicketId  String
+  exhibitItineraryId String
+  culturalExhibitId  String
+  endedAt            DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  adminUser          User              @relation("AdminUserTours", fields: [adminUserId], references: [id])
+  activatedTicket    ActivatedTicket   @relation(fields: [activatedTicketId], references: [id])
+  exhibitItinerary   ExhibitItinerary  @relation(fields: [exhibitItineraryId], references: [id])
+  culturalExhibit    CulturalExhibit   @relation(fields: [culturalExhibitId], references: [id])
+  members            User[]            @relation("TourMembers")
+  messages           Message[]
+
+  @@index([adminUserId])
+  @@index([activatedTicketId])
+  @@index([exhibitItineraryId])
+  @@index([culturalExhibitId])
 }
 
 model Ticket {
@@ -217,6 +303,8 @@ model Ticket {
   // Relations
   culturalExhibit         CulturalExhibit     @relation(fields: [culturalExhibitId], references: [id], onDelete: Cascade)
   exhibitItineraries      ExhibitItinerary[]  @relation("TicketItineraries")
+  // Reverse relation
+  activatedTickets        ActivatedTicket[]
 
   @@index([culturalExhibitId])
   @@index([type])
