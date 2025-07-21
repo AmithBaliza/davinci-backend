@@ -14,8 +14,12 @@ import culturalExhibitRoutes from "./modules/culturalExhibit/culturalExhibit.rou
 import culturalPieceRoutes from "./modules/culturalPiece/culturalPiece.routes";
 import exhibitItineraryRoutes from "./modules/exhibitItinerary/exhibitItinerary.routes";
 import exhibitSpaceRoutes from "./modules/exhibitSpace/exhibitSpace.routes";
+import generalSettingsRoutes from "./modules/generalSettings/generalSettings.routes";
 import levelRoutes from "./modules/level/level.routes";
+import llmModelRoutes from "./modules/llmModel/llmModel.routes";
 import messageRoutes from "./modules/message/message.routes";
+import surveyQuestionRoutes from "./modules/surveyQuestion/surveyQuestion.routes";
+import surveyResponseRoutes from "./modules/surveyResponse/surveyResponse.routes";
 import ticketRoutes from "./modules/ticket/ticket.routes";
 import tourRoutes from "./modules/tour/tour.routes";
 import userRoutes from "./modules/user/user.routes";
@@ -56,6 +60,10 @@ app.use("/api/auth", authRoutes);
 app.use("/api/activated-tickets", activatedTicketRoutes);
 app.use("/api/tours", tourRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/llm-models", llmModelRoutes);
+app.use("/api/general-settings", generalSettingsRoutes);
+app.use("/api/survey-questions", surveyQuestionRoutes);
+app.use("/api/survey-responses", surveyResponseRoutes);
 
 // Health check endpoint
 app.get("/health", (_req, res) => {

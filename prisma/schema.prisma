@@ -43,6 +43,13 @@ enum Role {
   SUPERADMIN
 }
 
+enum SurveyQuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  INPUT
+  RATING
+}
+
 model User {
   id                      String   @id
   firebaseUid             String   @unique
@@ -67,6 +74,7 @@ model User {
   adminTours              Tour[]   @relation("AdminUserTours")
   memberTours             Tour[]   @relation("TourMembers")
   messages                Message[]
+  surveyResponses         SurveyResponse[]
 
   @@index([firebaseUid])
   @@index([email])
@@ -199,6 +207,7 @@ model ExhibitItinerary {
   culturalExhibit         CulturalExhibit     @relation(fields: [culturalExhibitId], references: [id], onDelete: Cascade)
   tickets                 Ticket[]            @relation("TicketItineraries")
   tours                   Tour[]
+  surveyResponses         SurveyResponse[]
 
   @@index([culturalExhibitId])
   @@index([isActive])
@@ -274,11 +283,101 @@ model Tour {
   culturalExhibit    CulturalExhibit   @relation(fields: [culturalExhibitId], references: [id])
   members            User[]            @relation("TourMembers")
   messages           Message[]
+  surveyResponses    SurveyResponse[]
 
   @@index([adminUserId])
   @@index([activatedTicketId])
   @@index([exhibitItineraryId])
   @@index([culturalExhibitId])
+}
+
+model GeneralSettings {
+  id                Int      @id @default(1)
+  activeLLMModelId  String
+  importantNotice   Json
+  helpBotEnabled    Boolean  @default(true)
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  activeLLMModel    LLMModel @relation(fields: [activeLLMModelId], references: [id])
+}
+
+model LLMModel {
+  id           String   @id @default(uuid())
+  name         String
+  provider     String
+  apiUrl       String
+  apiKey       String
+  isActive     Boolean  @default(false)
+  isBackup     Boolean  @default(false)
+  healthStatus Boolean  @default(false)
+  config       Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Reverse relation
+  generalSettings GeneralSettings[]
+
+  @@index([isActive])
+  @@index([isBackup])
+  @@index([provider])
+}
+
+model SurveyQuestion {
+  id         String   @id @default(uuid())
+  isActive   Boolean  @default(true)
+  isOptional Boolean  @default(false)
+  order      Int
+  type       SurveyQuestionType
+  questions  Json
+  answers    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Reverse relation
+  surveyAnswers SurveyAnswer[]
+
+  @@index([isActive])
+  @@index([order])
+}
+
+model SurveyResponse {
+  id            String   @id @default(uuid())
+  tourId        String
+  userId        String
+  itineraryId   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  tour          Tour      @relation(fields: [tourId], references: [id])
+  user          User      @relation(fields: [userId], references: [id])
+  itinerary     ExhibitItinerary @relation(fields: [itineraryId], references: [id])
+  answers       SurveyAnswer[]
+
+  @@index([tourId])
+  @@index([userId])
+  @@index([itineraryId])
+}
+
+model SurveyAnswer {
+  id               String   @id @default(uuid())
+  surveyResponseId  String
+  questionId        String?
+  language          Language
+  questionText      String
+  answer            String?
+  answerArray       String[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  surveyResponse    SurveyResponse @relation(fields: [surveyResponseId], references: [id])
+  question          SurveyQuestion? @relation(fields: [questionId], references: [id], onDelete: SetNull)
+
+  @@index([surveyResponseId])
+  @@index([questionId])
+  @@index([language])
 }
 
 model Ticket {
