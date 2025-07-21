@@ -1,9 +1,13 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../config/database";
+import cacheService from "../../services/cache.service";
 
 export const createActivatedTicket = async (
   data: Prisma.ActivatedTicketCreateInput,
 ) => {
+  // Invalidate activated ticket caches when creating new activated ticket
+  await cacheService.invalidatePattern("activated-tickets:*");
+
   return prisma.activatedTicket.create({
     data,
     include: {

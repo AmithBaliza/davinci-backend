@@ -1,7 +1,11 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../config/database";
+import cacheService from "../../services/cache.service";
 
 export const createTicket = async (data: Prisma.TicketCreateInput) => {
+  // Invalidate ticket caches when creating new ticket
+  await cacheService.invalidatePattern("tickets:*");
+
   return prisma.ticket.create({
     data,
     include: {
@@ -27,50 +31,59 @@ export const getTickets = async (filters?: {
   limit?: number;
   offset?: number;
 }) => {
-  const where: Prisma.TicketWhereInput = {};
+  // Create cache key based on filters
+  const cacheKey = `tickets:list:${JSON.stringify(filters || {})}`;
 
-  if (filters?.culturalExhibitId) {
-    where.culturalExhibitId = filters.culturalExhibitId;
-  }
-  if (filters?.city) {
-    where.city = { contains: filters.city, mode: "insensitive" };
-  }
-  if (filters?.type) {
-    where.type = filters.type as any;
-  }
-  if (filters?.comingSoon !== undefined) {
-    where.comingSoon = filters.comingSoon;
-  }
-  if (filters?.isRecommended !== undefined) {
-    where.isRecommended = filters.isRecommended;
-  }
-  if (filters?.onOffer !== undefined) {
-    where.onOffer = filters.onOffer;
-  }
-  if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
-    where.price = {};
-    if (filters.minPrice !== undefined) {
-      where.price.gte = filters.minPrice;
-    }
-    if (filters.maxPrice !== undefined) {
-      where.price.lte = filters.maxPrice;
-    }
-  }
+  return cacheService.withCache(
+    cacheKey,
+    async () => {
+      const where: Prisma.TicketWhereInput = {};
 
-  return prisma.ticket.findMany({
-    where,
-    include: {
-      culturalExhibit: {
-        select: { id: true, name: true, city: true },
-      },
-      exhibitItineraries: {
-        select: { id: true, name: true, rank: true },
-      },
+      if (filters?.culturalExhibitId) {
+        where.culturalExhibitId = filters.culturalExhibitId;
+      }
+      if (filters?.city) {
+        where.city = { contains: filters.city, mode: "insensitive" };
+      }
+      if (filters?.type) {
+        where.type = filters.type as any;
+      }
+      if (filters?.comingSoon !== undefined) {
+        where.comingSoon = filters.comingSoon;
+      }
+      if (filters?.isRecommended !== undefined) {
+        where.isRecommended = filters.isRecommended;
+      }
+      if (filters?.onOffer !== undefined) {
+        where.onOffer = filters.onOffer;
+      }
+      if (filters?.minPrice !== undefined || filters?.maxPrice !== undefined) {
+        where.price = {};
+        if (filters.minPrice !== undefined) {
+          where.price.gte = filters.minPrice;
+        }
+        if (filters.maxPrice !== undefined) {
+          where.price.lte = filters.maxPrice;
+        }
+      }
+
+      return prisma.ticket.findMany({
+        where,
+        include: {
+          culturalExhibit: {
+            select: { id: true, name: true, city: true },
+          },
+          exhibitItineraries: {
+            select: { id: true, name: true, rank: true },
+          },
+        },
+        orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
+        take: filters?.limit || 50,
+        skip: filters?.offset || 0,
+      });
     },
-    orderBy: [{ priority: "asc" }, { createdAt: "desc" }],
-    take: filters?.limit,
-    skip: filters?.offset,
-  });
+    1800, // Cache for 30 minutes (tickets don't change frequently)
+  );
 };
 
 export const getTicketById = async (id: string) => {
