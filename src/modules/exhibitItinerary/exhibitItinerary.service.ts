@@ -1,9 +1,13 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../../config/database";
+import cacheService from "../../services/cache.service";
 
 export const createExhibitItinerary = async (
   data: Prisma.ExhibitItineraryCreateInput,
 ) => {
+  // Invalidate itinerary caches when creating new itinerary
+  await cacheService.invalidatePattern("itineraries:*");
+
   return prisma.exhibitItinerary.create({
     data,
     include: {
@@ -24,38 +28,47 @@ export const getExhibitItineraries = async (filters?: {
   limit?: number;
   offset?: number;
 }) => {
-  const where: Prisma.ExhibitItineraryWhereInput = {};
+  // Create cache key based on filters
+  const cacheKey = `itineraries:list:${JSON.stringify(filters || {})}`;
 
-  if (filters?.culturalExhibitId) {
-    where.culturalExhibitId = filters.culturalExhibitId;
-  }
-  if (filters?.isActive !== undefined) {
-    where.isActive = filters.isActive;
-  }
-  if (filters?.isCustom !== undefined) {
-    where.isCustom = filters.isCustom;
-  }
-  if (filters?.isPreferred !== undefined) {
-    where.isPreferred = filters.isPreferred;
-  }
-  if (filters?.minDuration !== undefined) {
-    where.minDuration = { gte: filters.minDuration };
-  }
-  if (filters?.maxDuration !== undefined) {
-    where.maxDuration = { lte: filters.maxDuration };
-  }
+  return cacheService.withCache(
+    cacheKey,
+    async () => {
+      const where: Prisma.ExhibitItineraryWhereInput = {};
 
-  return prisma.exhibitItinerary.findMany({
-    where,
-    include: {
-      culturalExhibit: {
-        select: { id: true, name: true, city: true },
-      },
+      if (filters?.culturalExhibitId) {
+        where.culturalExhibitId = filters.culturalExhibitId;
+      }
+      if (filters?.isActive !== undefined) {
+        where.isActive = filters.isActive;
+      }
+      if (filters?.isCustom !== undefined) {
+        where.isCustom = filters.isCustom;
+      }
+      if (filters?.isPreferred !== undefined) {
+        where.isPreferred = filters.isPreferred;
+      }
+      if (filters?.minDuration !== undefined) {
+        where.minDuration = { gte: filters.minDuration };
+      }
+      if (filters?.maxDuration !== undefined) {
+        where.maxDuration = { lte: filters.maxDuration };
+      }
+
+      return prisma.exhibitItinerary.findMany({
+        where,
+        include: {
+          culturalExhibit: {
+            select: { id: true, name: true, city: true },
+          },
+        },
+        orderBy: [{ rank: "asc" }, { createdAt: "desc" }],
+        take: filters?.limit || 50,
+        skip: filters?.offset || 0,
+      });
     },
-    orderBy: [{ rank: "asc" }, { createdAt: "desc" }],
-    take: filters?.limit,
-    skip: filters?.offset,
-  });
+    1800, // Cache for 30 minutes (itineraries don't change frequently)
+  );
 };
 
 export const getExhibitItineraryById = async (id: string) => {

@@ -80,6 +80,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([language])
+  @@index([createdAt])
 }
 
 model CulturalExhibit {

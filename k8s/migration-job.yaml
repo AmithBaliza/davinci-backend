@@ -1,0 +1,113 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: davinci-migration
+  namespace: davinci-backend
+  labels:
+    app: davinci-migration
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: davinci-migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migration
+          image: your-registry/davinci-backend:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "🔄 Starting database migration..."
+
+              # Test database connection
+              echo "Testing database connection..."
+              node scripts/test-db-connection.js
+
+              if [ $? -ne 0 ]; then
+                echo "❌ Database connection failed!"
+                exit 1
+              fi
+
+              echo "✅ Database connection successful!"
+
+              # Generate Prisma client
+              echo "Generating Prisma client..."
+              npx prisma generate
+
+              # Run migrations
+              echo "Running database migrations..."
+              npx prisma migrate deploy
+
+              if [ $? -ne 0 ]; then
+                echo "❌ Migration failed!"
+                exit 1
+              fi
+
+              echo "✅ Migration completed successfully!"
+
+              # Verify schema
+              echo "Verifying database schema..."
+              node scripts/test-db-connection.js
+
+              echo "🎉 Database migration job completed!"
+          envFrom:
+            - secretRef:
+                name: davinci-secrets
+            - configMapRef:
+                name: davinci-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: davinci-seed-data
+  namespace: davinci-backend
+  labels:
+    app: davinci-seed
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: davinci-seed
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: seed
+          image: your-registry/davinci-backend:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "🌱 Starting database seeding..."
+
+              # Wait for migration job to complete
+              echo "Waiting for migration to complete..."
+              sleep 30
+
+              # Add any seed data scripts here
+              # node scripts/seed-production-data.js
+
+              echo "✅ Database seeding completed!"
+          envFrom:
+            - secretRef:
+                name: davinci-secrets
+            - configMapRef:
+                name: davinci-config
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "200m"
